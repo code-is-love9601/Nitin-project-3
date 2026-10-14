@@ -27,6 +27,26 @@ body{
 }
 a{color:inherit;text-decoration:none}
 
+/* --- Dynamic Event & Festival Banner --- */
+#specialEventBanner {
+  background: linear-gradient(90deg, #ff9900, #00e9a1, #ff3366);
+  background-size: 200% 200%;
+  color: #031321;
+  text-align: center;
+  padding: 12px 20px;
+  font-weight: bold;
+  font-size: 15px;
+  display: none;
+  z-index: 2000;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  animation: bannerGradient 4s ease infinite;
+}
+@keyframes bannerGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* --- Preloader --- */
 #preloader {
   position: fixed;
@@ -40,7 +60,7 @@ a{color:inherit;text-decoration:none}
   align-items: center;
   justify-content: center;
   z-index: 999999;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.4s ease;
 }
 .loader-box { text-align: center; }
 .loader-icon { font-size: 55px; animation: busPulse 1s infinite alternate; }
@@ -67,6 +87,7 @@ button{cursor:pointer;border:1px solid var(--green);background:transparent;color
 button:hover{filter:brightness(1.15)}
 button.primary{background:var(--green);color:#00251b;font-weight:bold}
 button:disabled{opacity:.55;cursor:not-allowed}
+button.secondary{background:#333;border-color:#555;}
 .hero{
   padding:55px 5%;min-height:260px;
   background:radial-gradient(ellipse at 85% 30%,#075348 0%,transparent 38%),
@@ -85,15 +106,62 @@ main{max-width:1300px;margin:auto;padding:25px 3%}
   min-width:0
 }
 .panel h2{margin-top:0}
+.panel h3{margin:0 0 5px; color:#ff1744; font-size:18px;}
+.subtitle{color:var(--muted); font-size:12px; margin-bottom:12px;}
 .muted{color:var(--muted)}
 .route-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-select,input{background:#0a2939;color:white;border:1px solid #426271}
-#route{min-width:160px}
+select,input{background:#0a2939;color:white;border:1px solid #426271; width:100%; margin:4px 0;}
+
+/* --- Map Container Styles --- */
 #map{
-  width:100%;height:380px;border-radius:13px;
-  margin:15px 0;background:#d8e3e3;z-index:1
+  width:100%;height:450px;border-radius:13px;
+  margin:15px 0;background:#031321;z-index:1;position:relative;
 }
 .map-note{font-size:12px;color:var(--muted)}
+
+/* Map Custom Markers & Popup Styles */
+.itm-marker {
+  width: 24px;
+  height: 24px;
+  background: #ff1744;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ff1744;
+}
+.area-marker {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 5px #555;
+}
+.legend {
+  background: #071e2d;
+  color: #f4fbff;
+  padding: 10px;
+  line-height: 1.8;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+#routeInfo {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0a2939;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.6;
+  display: none;
+}
+
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:15px}
 .stat{border:1px solid var(--border);border-radius:13px;padding:15px}
 .big{font-size:25px;font-weight:bold;color:var(--green)}
@@ -223,12 +291,17 @@ footer{text-align:center;color:var(--muted);padding:25px}
   .hero{padding:35px 5%}
   .features,.bottom,.stats{grid-template-columns:1fr}
   .panel{padding:14px}
-  #map{height:310px}
+  #map{height:350px}
 }
 </style>
 </head>
 
 <body>
+
+<!-- Automatic Festive & Birthday Banner -->
+<div id="specialEventBanner">
+  <span id="bannerText"></span>
+</div>
 
 <!-- Preloader -->
 <div id="preloader">
@@ -240,7 +313,7 @@ footer{text-align:center;color:var(--muted);padding:25px}
 </div>
 
 <header>
-  <a class="logo" href="#home">🚌 BusSaathi</a>
+  <a class="logo" id="siteLogo" href="#home">🚌 BusSaathi</a>
   <nav>
     <a href="#home">Home</a>
     <a href="#student">Student</a>
@@ -252,9 +325,9 @@ footer{text-align:center;color:var(--muted);padding:25px}
 </header>
 
 <section class="hero" id="home">
-  <div class="eyebrow">SMARTER DAILY COMMUTE</div>
+  <div class="eyebrow" id="heroEyebrow">SMARTER DAILY COMMUTE</div>
   <h1>Your bus. Your <span>time.</span></h1>
-  <p>Explore bus routes, view stops on an interactive map and check sample arrival information — all in one place.</p>
+  <p id="heroSubtext">Explore bus routes, view stops on an interactive map and check sample arrival information — all in one place.</p>
   <div class="actions">
     <button class="primary" onclick="goTo('student')">📍 Student Mode</button>
     <button onclick="goTo('driver')">🧭 Driver Mode</button>
@@ -264,37 +337,36 @@ footer{text-align:center;color:var(--muted);padding:25px}
 <main>
   <div class="layout">
     <section class="panel" id="student">
-      <div class="route-row">
-        <div>
-          <h2>📍 Track Your Bus</h2>
-          <p class="muted">Choose a route to see its stops on the map.</p>
+      <h3>Gorakhpur Area Navigator</h3>
+      <div class="subtitle">Find road routes to ITM GIDA, Gorakhpur</div>
+
+      <!-- Search & Area Selection Controls -->
+      <div style="margin-bottom: 12px;">
+        <input id="search" type="search" placeholder="Search an area...">
+        <select id="areaSelect" aria-label="Select starting area">
+          <option value="">Choose starting area</option>
+        </select>
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button id="routeBtn" class="primary" style="flex:1;">Show Road Route to ITM</button>
+          <button id="clearBtn" class="secondary" style="flex:1;">Clear Route</button>
         </div>
-        <label>Bus route<br>
-          <select id="route" onchange="changeRoute()">
-            <option value="gorakhpur">Gorakhpur Route (MMMUT - Medical - Goal Ghar)</option>
-            <option value="reverse">Reverse Route (Goal Ghar - Medical - MMMUT)</option>
-          </select>
-        </label>
       </div>
 
+      <div id="status" role="status">Select an area or tap its marker on the map.</div>
       <div id="map"></div>
-      <p id="mapStatus" class="map-note">Loading interactive map…</p>
+      <div id="routeInfo"></div>
 
-      <div class="stats">
+      <div class="stats" style="margin-top:15px;">
         <div class="stat">
-          <div>Estimated arrival at destination</div>
-          <div class="big" id="eta">15 minutes</div>
-          <small class="muted">Sample estimate only — not live traffic data.</small>
+          <div>Estimated Driving Time</div>
+          <div class="big" id="eta">-- mins</div>
+          <small class="muted">Calculated using OSRM Routing Service.</small>
         </div>
         <div>
-          <h3>Route Stops</h3>
-          <ol class="stops" id="stops"></ol>
+          <h3>Destination</h3>
+          <p style="margin:5px 0;"><strong>ITM GIDA Gorakhpur</strong></p>
+          <small class="muted">Institute of Technology & Management</small>
         </div>
-      </div>
-
-      <div class="actions">
-        <button class="primary" onclick="showAllStops()">☷ View All Stops</button>
-        <button onclick="fitRoute()">⛶ Fit Route on Map</button>
       </div>
     </section>
 
@@ -319,8 +391,8 @@ footer{text-align:center;color:var(--muted);padding:25px}
 
   <section class="features" id="features">
     <div class="feature"><h3>🗺️ Interactive Map</h3><p>Explore routes and stops on a real map.</p></div>
-    <div class="feature"><h3>🔀 Multiple Routes</h3><p>Switch between Gorakhpur city stops.</p></div>
-    <div class="feature"><h3>🕒 Arrival Estimate</h3><p>See sample arrival information.</p></div>
+    <div class="feature"><h3>🔀 Multiple Locations</h3><p>Choose from Sahjanwa, Golghar, Medical, MMMUT, etc.</p></div>
+    <div class="feature"><h3>🕒 Arrival Estimate</h3><p>See live driving distance and time.</p></div>
     <div class="feature"><h3>🔐 Privacy First</h3><p>GPS test location is not shared.</p></div>
   </section>
 
@@ -354,7 +426,7 @@ footer{text-align:center;color:var(--muted);padding:25px}
   </div>
   <div class="chat-body" id="chatBody">
     <div class="chat-msg-bot">
-      Namaste! Main Saathi AI hoon. MMMUT, Medical Road, Goal Ghar ki bus timing, traffic delay ya stops ke baare me poocho! 🚌
+      Namaste! Main Saathi AI hoon. ITM GIDA route, Sahjanwa, Golghar, Medical Road ya bus timing ke baare me poocho! 🚌
     </div>
   </div>
   <form class="chat-footer" onsubmit="handleChatSubmit(event)">
@@ -372,44 +444,96 @@ footer{text-align:center;color:var(--muted);padding:25px}
 <script>
 "use strict";
 
-const routeData = {
-  gorakhpur: {
-    name: "Gorakhpur Route",
-    eta: "15 minutes",
-    stops: [
-      { name: 'MMMUT', time: "08:00", coords: [26.73108, 83.43721] },
-      { name: 'Medical Road', time: "08:12", coords: [26.7320664, 83.3843874] },
-      { name: 'Goal Ghar', time: "08:25", coords: [26.751213, 83.376266] }
-    ]
-  },
-  reverse: {
-    name: "Reverse Route",
-    eta: "20 minutes",
-    stops: [
-      { name: 'Goal Ghar', time: "08:00", coords: [26.751213, 83.376266] },
-      { name: 'Medical Road', time: "08:12", coords: [26.7320664, 83.3843874] },
-      { name: 'MMMUT', time: "08:25", coords: [26.73108, 83.43721] }
-    ]
+/* Dynamic Branding & Seasonal Dates */
+function checkSpecialEvents() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+
+  const banner = document.getElementById("specialEventBanner");
+  const bannerText = document.getElementById("bannerText");
+  const logo = document.getElementById("siteLogo");
+
+  if (month === 10 && (day === 12 || day === 13 || day === 14 || day === 24)) {
+    bannerText.innerHTML = "🏹 Happy Dussehra! May truth and goodness win over all obstacles. Wishing you a safe journey!";
+    banner.style.display = "block";
+    logo.innerHTML = "🏹 BusSaathi | Vijayadashami";
   }
+  else if (month === 10 && day === 15) {
+    bannerText.innerHTML = "🚀 Remembering Dr. A.P.J. Abdul Kalam on his Jayanti! <i>“Dream, dream, dream. Dreams transform into thoughts.”</i>";
+    banner.style.display = "block";
+    logo.innerHTML = "🚀 BusSaathi | Kalam Special";
+  }
+  else if ((month === 10 && day >= 28) || (month === 11 && day <= 5)) {
+    bannerText.innerHTML = "🪔 Happy Diwali! May your path be illuminated with joy and prosperity. Have a safe ride!";
+    banner.style.display = "block";
+    logo.innerHTML = "🪔 BusSaathi | Diwali Special";
+  }
+  else if (month === 3 && day >= 10 && day <= 25) {
+    bannerText.innerHTML = "🎨 Happy Holi! Spreading bright colors of happiness and safe travel!";
+    banner.style.display = "block";
+    logo.innerHTML = "🎨 BusSaathi | Holi Special";
+  }
+  else if (month === 8 && day === 15) {
+    bannerText.innerHTML = "🇮🇳 Happy Independence Day! Freedom in mind, strength in words, pureness in our souls.";
+    banner.style.display = "block";
+    logo.innerHTML = "🇮🇳 BusSaathi | 15 Aug";
+  }
+  else if (month === 1 && day === 26) {
+    bannerText.innerHTML = "🇮🇳 Happy Republic Day! Celebrating the pride and unity of India.";
+    banner.style.display = "block";
+    logo.innerHTML = "🇮🇳 BusSaathi | 26 Jan";
+  }
+}
+
+/* College destination */
+const itm = {
+  name: 'ITM GIDA',
+  area: 'Institute of Technology and Management',
+  lat: 26.74296,
+  lng: 83.27327,
+  color: '#ff1744',
+  destination: true
 };
 
+/* Main Gorakhpur locations */
+const places = [
+  itm,
+  { name: 'GIDA Sector 7', area: 'Educational and Industrial Area', lat: 26.7460, lng: 83.2690, color: '#ff9800' },
+  { name: 'GIDA Sector 22', area: 'GIDA Industrial Area', lat: 26.7525, lng: 83.2298, color: '#ff9800' },
+  { name: 'GIDA Phase 1', area: 'Industrial Area', lat: 26.75219, lng: 83.22104, color: '#ff9800' },
+  { name: 'Kalesar', area: 'GIDA and Sahjanwa locality', lat: 26.74087, lng: 83.24585, color: '#388e3c' },
+  { name: 'Sahjanwa', area: 'Town and Railway Station Area', lat: 26.76158, lng: 83.21582, color: '#388e3c' },
+  { name: 'Jagdishpur', area: 'Sahjanwa locality', lat: 26.7650, lng: 83.2420, color: '#388e3c' },
+  { name: 'Sihapar', area: 'Locality near GIDA', lat: 26.7650, lng: 83.2220, color: '#388e3c' },
+  { name: 'Pali', area: 'Sahjanwa region', lat: 26.81963, lng: 83.20392, color: '#388e3c' },
+  { name: 'Gorakhpur Railway Station', area: 'Main Railway Station', lat: 26.7599, lng: 83.3731, color: '#7b1fa2' },
+  { name: 'Golghar', area: 'Commercial Centre', lat: 26.751213, lng: 83.376266, color: '#f57c00' },
+  { name: 'Mohaddipur', area: 'Major City Locality', lat: 26.7490, lng: 83.3620, color: '#1976d2' },
+  { name: 'Medical Road', area: 'Main Road Area', lat: 26.7320664, lng: 83.3843874, color: '#1976d2' },
+  { name: 'Gorakhpur University', area: 'Education Area', lat: 26.7485, lng: 83.3810, color: '#c2185b' },
+  { name: 'MMMUT', area: 'Madan Mohan Malaviya University of Technology', lat: 26.73108, lng: 83.43721, color: '#c2185b' },
+  { name: 'Gorakhnath Temple', area: 'Religious Landmark', lat: 26.7785, lng: 83.3775, color: '#00897b' },
+  { name: 'Geeta Press', area: 'Cultural Landmark', lat: 26.7620, lng: 83.3745, color: '#8d6e63' },
+  { name: 'Kushmi Forest', area: 'Green Area', lat: 26.7470, lng: 83.3330, color: '#558b2f' },
+  { name: 'Ramgarh Tal', area: 'Lake and Recreation Area', lat: 26.7165, lng: 83.4160, color: '#0288d1' },
+  { name: 'Nauka Vihar', area: 'Lakefront Attraction', lat: 26.7160, lng: 83.4170, color: '#0288d1' },
+  { name: 'AIIMS Gorakhpur', area: 'Medical Institution', lat: 26.7280, lng: 83.4080, color: '#455a64' }
+];
+
 let map = null;
-let routeLine = null;
-let stopMarkers = [];
+const markers = new Map();
+let routeLayer = null;
+let routeRequestId = 0;
 let gpsMarker = null;
 let watchId = null;
-let currentRoute = "gorakhpur";
 
 function goTo(id) {
   document.getElementById(id).scrollIntoView({behavior:"smooth"});
 }
 
-function setMapStatus(message) {
-  document.getElementById("mapStatus").textContent = message;
-}
-
 function initialiseMap() {
-  const status = document.getElementById("mapStatus");
+  const status = document.getElementById('status');
 
   if (typeof L === "undefined") {
     status.textContent = "Map library could not load. Check your internet connection.";
@@ -417,206 +541,57 @@ function initialiseMap() {
   }
 
   try {
-    map = L.map("map");
+    map = L.map('map');
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    renderRoute();
-    setMapStatus("Map powered by OpenStreetMap and Leaflet.");
+    const select = document.getElementById('areaSelect');
+    const search = document.getElementById('search');
 
-    setTimeout(function() {
-      if (map) map.invalidateSize();
-    }, 300);
-  } catch (error) {
-    console.error("Map initialisation error:", error);
-    setMapStatus("Map could not start: " + error.message);
-  }
-}
+    places.forEach(place => {
+      if (!place.destination) {
+        const option = document.createElement('option');
+        option.value = place.name;
+        option.textContent = place.name;
+        select.appendChild(option);
+      }
 
-function renderRoute() {
-  if (!map || typeof L === "undefined") return;
+      const icon = L.divIcon({
+        className: '',
+        html: place.destination
+          ? '<div class="itm-marker"></div>'
+          : `<div class="area-marker" style="background:${place.color}"></div>`,
+        iconSize: place.destination ? [24, 24] : [15, 15],
+        iconAnchor: place.destination ? [12, 12] : [7.5, 7.5]
+      });
 
-  const data = routeData[currentRoute];
-  const points = data.stops.map(stop => stop.coords);
+      const marker = L.marker([place.lat, place.lng], { icon }).addTo(map);
+      markers.set(place.name, marker);
+      marker.bindTooltip(place.name);
 
-  if (routeLine) map.removeLayer(routeLine);
-  stopMarkers.forEach(marker => map.removeLayer(marker));
-  stopMarkers = [];
+      const popup = document.createElement('div');
+      const heading = document.createElement('b');
+      heading.textContent = place.name;
+      heading.style.color = place.color;
+      popup.appendChild(heading);
 
-  routeLine = L.polyline(points, {
-    color:"#00c98b",
-    weight:6,
-    opacity:0.95
-  }).addTo(map);
+      const description = document.createElement('p');
+      description.textContent = place.area;
+      description.style.margin = '5px 0';
+      popup.appendChild(description);
 
-  data.stops.forEach(function(stop) {
-    const marker = L.marker(stop.coords).addTo(map)
-      .bindPopup("<b>" + stop.name + "</b><br>Sample time: " + stop.time);
-    stopMarkers.push(marker);
-  });
+      if (!place.destination) {
+        const button = document.createElement('button');
+        button.textContent = 'Show route to ITM GIDA';
+        button.style.width = '100%';
+        button.style.padding = '8px';
+        button.style.background = '#1677e8';
+        button.style.color = '#fff';
+        button.style.border = 'none';
+        button.style.borderRadius = '6px';
+        button.style.cursor = 'pointer';
 
-  document.getElementById("stops").innerHTML = data.stops.map(function(stop) {
-    return "<li><strong>" + stop.name + "</strong><br><span class='muted'>" +
-      stop.time + "</span></li>";
-  }).join("");
-
-  document.getElementById("eta").textContent = data.eta;
-  fitRoute();
-}
-
-function changeRoute() {
-  currentRoute = document.getElementById("route").value;
-  renderRoute();
-}
-
-function fitRoute() {
-  if (!map || !routeLine) return;
-  const bounds = routeData[currentRoute].stops.map(s => s.coords);
-  map.fitBounds(bounds, { padding: [40, 40] });
-}
-
-function showAllStops() {
-  const data = routeData[currentRoute];
-  alert(data.name + "\n\n" + data.stops.map((stop, i) => (i + 1) + ". " + stop.name + " — " + stop.time).join("\n"));
-}
-
-function startGPS() {
-  const status = document.getElementById("gpsStatus");
-  const startButton = document.getElementById("startBtn");
-  const coords = document.getElementById("coordinates");
-
-  if (!navigator.geolocation) {
-    status.textContent = "GPS is not supported by this browser.";
-    return;
-  }
-
-  status.textContent = "Requesting location permission…";
-  startButton.disabled = true;
-
-  try {
-    watchId = navigator.geolocation.watchPosition(
-      function(position) {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        status.textContent = "GPS active — location received.";
-        coords.textContent = "Latitude: " + lat.toFixed(6) + " | Longitude: " + lng.toFixed(6);
-
-        if (map && typeof L !== "undefined") {
-          if (!gpsMarker) {
-            gpsMarker = L.circleMarker([lat,lng], {
-              radius:9, color:"#ffffff", weight:2,
-              fillColor:"#00e9a1", fillOpacity:1
-            }).addTo(map).bindPopup("Your location");
-          } else {
-            gpsMarker.setLatLng([lat,lng]);
-          }
-          map.setView([lat,lng], 16);
-        }
-        startButton.disabled = false;
-      },
-      function(error) {
-        status.textContent = "GPS error: " + error.message;
-        watchId = null;
-        startButton.disabled = false;
-      },
-      { enableHighAccuracy:true, maximumAge:0, timeout:20000 }
-    );
-  } catch(error) {
-    watchId = null;
-    startButton.disabled = false;
-  }
-}
-
-function stopGPS() {
-  if (watchId !== null && navigator.geolocation) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-  }
-  document.getElementById("gpsStatus").textContent = "GPS stopped.";
-  document.getElementById("coordinates").textContent = "";
-  document.getElementById("startBtn").disabled = false;
-}
-
-// Toggle Chat Window
-function toggleChatWindow() {
-  const win = document.getElementById("chatWindow");
-  win.style.display = (win.style.display === "flex") ? "none" : "flex";
-}
-
-// Smart AI Assistant Responses
-function handleChatSubmit(e) {
-  e.preventDefault();
-  const input = document.getElementById("userInput");
-  const body = document.getElementById("chatBody");
-  
-  if (!input || !input.value.trim()) return;
-
-  const userText = input.value.trim();
-  const lowerText = userText.toLowerCase();
-
-  const userMsg = document.createElement("div");
-  userMsg.className = "chat-msg-user";
-  userMsg.textContent = userText;
-  body.appendChild(userMsg);
-
-  input.value = "";
-  body.scrollTop = body.scrollHeight;
-
-  setTimeout(() => {
-    const botMsg = document.createElement("div");
-    botMsg.className = "chat-msg-bot";
-    
-    let reply = "Mujhe samajh nahi aaya. Aap bus ki timing, traffic delay, stops (MMMUT, Medical Road, Goal Ghar) ya GPS ke baare me pooch sakte hain!";
-
-    if (lowerText.includes("kab") || lowerText.includes("time") || lowerText.includes("aayegi") || lowerText.includes("eta")) {
-      const currentData = routeData[currentRoute];
-      reply = `Abhi selected route par bus arrival time lagbhag ${currentData.eta} hai.`;
-    } 
-    else if (lowerText.includes("late") || lowerText.includes("delay") || lowerText.includes("traffic")) {
-      reply = "Medical Road aur Goal Ghar ke beech halka traffic hai, is wajah se bus lagbhag 5 minute late chal rahi hai!";
-    } 
-    else if (lowerText.includes("stop") || lowerText.includes("stoppage" ) || lowerText.includes("kaha") || lowerText.includes("mmmut") || lowerText.includes("goal ghar") || lowerText.includes("medical")) {
-      const currentData = routeData[currentRoute];
-      const stopList = currentData.stops.map(s => s.name).join(" ➔ ");
-      reply = `Route stops hain: ${stopList}.`;
-    } 
-    else if (lowerText.includes("driver") || lowerText.includes("gps") || lowerText.includes("location")) {
-      reply = "Driver Mode me jaakar 'Start GPS Test' dabayein, isse aapki live location map par dikhne lagegi!";
-    } 
-    else if (lowerText.includes("hi") || lowerText.includes("hello") || lowerText.includes("hey") || lowerText.includes("namaste")) {
-      reply = "Namaste! Main Saathi AI Assistant hoon. MMMUT, Medical Road aur Goal Ghar tracking me kya madad kar sakta hoon?";
-    }
-    else if (lowerText.includes("nitin") || lowerText.includes("developer")) {
-      reply = "Yeh project Nitin ne apne doston (Darsh, Roushan, Naushad, Himanshu) ke sath banaya hai! 👨‍💻⚡";
-    }
-
-    botMsg.textContent = reply;
-    body.appendChild(botMsg);
-    body.scrollTop = body.scrollHeight;
-  }, 600);
-}
-
-// Automatic Hide Loading Screen
-function removePreloader() {
-  const preloader = document.getElementById("preloader");
-  if (preloader) {
-    preloader.classList.add("hide-preloader");
-    setTimeout(function() {
-      preloader.style.display = "none";
-    }, 600);
-  }
-}
-
-window.addEventListener("load", function() {
-  initialiseMap();
-  setTimeout(removePreloader, 1500);
-});
-
-setTimeout(removePreloader, 3000);
-</script>
-</body>
-</html>
+        button.addEventListen
